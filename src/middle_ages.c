@@ -1,31 +1,45 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "parse.h"
 #include "engine.h"
 
 int main() {
+	int ret;
 
-    start_game();
+	start_game();
 
-    command *new_command;
-    while (1) {
-        new_command = parse_command();
+	struct command *cmd = malloc(sizeof(struct command));
+	while (1) {
+		ret = parse_command(cmd);
 
-        if (strcmp(new_command->name, "INIT") == 0) {
-            init(new_command->data[0],
-                 new_command->data[1],
-                 new_command->data[2],
-                 new_command->data[3],
-                 new_command->data[4],
-                 new_command->data[5],
-                 new_command->data[6]);
-        }
+		if(ret == PARSE_END) {
+			break;
+		}
 
-        print_topleft();
-    }
+		switch (cmd->type) {
+			case INIT:
+				init(cmd->n, cmd->k, cmd->p, cmd->x1, cmd->y1, cmd->x2, cmd->y2);
+				break;
+			case MOVE:
+				move(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
+				break;
+			case PRODUCE_KNIGHT:
+				produce_knight(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
+				break;
+			case PRODUCE_PEASANT:
+				produce_peasant(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
+				break;
+			case END_TURN:
+				end_turn();
+				break;
+		}
 
-    end_game();
+		print_topleft();
+	}
 
-    return 0;
+	end_game();
+
+	return 0;
 }
