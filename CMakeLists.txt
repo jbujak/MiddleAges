@@ -20,7 +20,15 @@ set(SOURCE_FILES
         src/engine.h
         src/middle_ages.c
         src/parse.c
-        src/parse.h)
+        src/parse.h
+	src/list.h
+	src/list.c
+	src/pawn.h
+	src/pawn.c
+	src/preview.h
+	src/preview.c
+	src/global.h
+	)
 
 add_executable(middle_ages ${SOURCE_FILES})
 

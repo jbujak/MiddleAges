@@ -40,6 +40,8 @@ int parse_command(struct command *ret) {
 
 	fgets(line, LINE_MAX, stdin);
 	if(feof(stdin)) {
+		free(command_str);
+		free(line);
 		return PARSE_END;
 	}
 
@@ -63,8 +65,13 @@ int parse_command(struct command *ret) {
 	} else if(strcmp(command_str, END_TURN_CMD) == 0) {
 		ret->type = END_TURN;
 	} else {
+		free(command_str);
+		free(line);
 		return PARSE_ERROR;
 	}
+
+	free(command_str);
+	free(line);
 
 	return PARSE_OK;
 }
@@ -77,11 +84,17 @@ static void fill_x_y(int begin, char *line, struct command *ret) {
 }
 
 static int get_number(int pos, char *line) {
-	char *buf = malloc(LINE_MAX * sizeof(char));
+	char *buf;
+	int res;
+	
+	buf = malloc(LINE_MAX * sizeof(char));
 	
 	get_token(pos, line, buf);
+	res = atoi(buf);
 
-	return atoi(buf);
+	free(buf);
+
+	return res;
 }
 
 static void get_token(int pos, char *line, char *buf) {
