@@ -12,7 +12,7 @@ else (DEBUG)
 endif (DEBUG)
 
 # ustawiamy flagi kompilacji w wersji debug i release
-set(CMAKE_C_FLAGS_DEBUG "-std=gnu99 -Wall -pedantic -g")
+set(CMAKE_C_FLAGS_DEBUG "-std=gnu99 -Wall -Wextra -pedantic -g")
 set(CMAKE_C_FLAGS_RELEASE "-std=gnu99 -O3")
 
 set(SOURCE_FILES

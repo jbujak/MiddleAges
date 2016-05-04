@@ -1,3 +1,7 @@
+/** @file
+ *  Implementation of preview engine.
+ */
+
 #include <stdio.h>
 
 #include "preview.h"
@@ -13,19 +17,21 @@
 int preview_size;
 static char preview[MAX_PREVIEW_SIZE + 1][MAX_PREVIEW_SIZE + 1];
 
-static char get_preview_symbol(int player, enum pawn_type pawn_type);
+// Declaration of private functions.
+static void fill_preview();
+
+static char get_preview_symbol(enum player player, enum pawn_type pawn_type);
 
 static char upcase(const char c);
 static char downcase(const char c);
 
-static void fill_preview();
-
-void init_preview(int n, int x1, int y1, int x2, int y2) {
+// Implementation of exported functions.
+void init_preview(int n) {
 	preview_size = n < MAX_PREVIEW_SIZE ? n : MAX_PREVIEW_SIZE;
 	fill_preview();
 }
 
-void update_preview_add(int player, int x, int y, enum pawn_type pawn_type) {
+void update_preview_add(enum player player, int x, int y, enum pawn_type pawn_type) {
 	if(x > MAX_PREVIEW_SIZE || y > MAX_PREVIEW_SIZE) 
 		return;
 
@@ -47,10 +53,19 @@ void print_preview() {
 		printf("\n");
 	}
 	printf("\n");
-
 }
 
-static char get_preview_symbol(int player, enum pawn_type pawn_type) {
+// Implementation of private functions.
+
+static void fill_preview() {
+	for(int i = 1; i <= preview_size; i++) {
+		for(int j = 1; j <= preview_size; j++) {
+			preview[i][j] = PREVIEW_EMPTY;
+		}
+	}
+}
+
+static char get_preview_symbol(enum player player, enum pawn_type pawn_type) {
 	char result;
 	switch(pawn_type) {
 		case PEASANT:
@@ -72,12 +87,4 @@ static char upcase(const char c) {
 
 static char downcase(const char c) {
 	return c | (1 << 5);
-}
-
-static void fill_preview() {
-	for(int i = 1; i <= preview_size; i++) {
-		for(int j = 1; j <= preview_size; j++) {
-			preview[i][j] = PREVIEW_EMPTY;
-		}
-	}
 }

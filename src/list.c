@@ -1,3 +1,6 @@
+/** @file
+ *  Implemention of list.
+ */
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -46,9 +49,9 @@ struct pawn* get_pawn(int x, int y, const struct list *list) {
 
 	found = find_element(x, y, list);
 
-	if(found == NULL) {
+	if(found == NULL)
 		return NULL;
-	}
+
 	return found->value;
 }
 
@@ -71,9 +74,8 @@ struct pawn* remove_pawn(int x, int y, struct list *list) {
 	struct pawn *result;
 
 	removed = find_element(x, y, list);
-	if(removed == NULL) {
+	if(removed == NULL)
 		return NULL;
-	}
 
 	next = removed->next;
 	prev = removed->prev;
@@ -113,9 +115,8 @@ static struct list_element* find_element(int x, int y, const struct list* list) 
 	current = list->tail->next;
 
 	while(current->next != NULL) {
-		if(current->value->x == x && current->value->y == y) {
+		if(current->value->x == x && current->value->y == y)
 			return current;
-		}
 
 		current = current->next;
 	}

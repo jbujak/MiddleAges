@@ -1,6 +1,12 @@
+ /** @file
+  *  Implementation of parser.
+  */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <ctype.h>
 
 #include "parse.h"
 
@@ -12,99 +18,165 @@
 #define PRODUCE_PEASANT_CMD "PRODUCE_PEASANT"
 #define END_TURN_CMD "END_TURN"
 
-#define COMMAND_POSITION 0
-#define N_POSITION 1
-#define K_POSITION 2
-#define P_POSITION 3
+#define PLAYER_1_INT 1
+#define PLAYER_2_INT 2
 
+#define COMMAND_POSITION 0
+
+#define INIT_SIZE_POSITION 1
+#define INIT_TURNS_POSITION 2
+#define INIT_PLAYER_POSITION 3
 #define INIT_X_Y_POSITION 4
-#define MOVE_X_Y_POSITION 1
-#define PRODUCE_KNIGHT_X_Y_POSITION 1 
-#define PRODUCE_PEASANT_X_Y_POSITION 1 
+#define INIT_LAST_POSITION 7
+
+#define MOVE_ACTION_X_Y_POSITION 1
+#define MOVE_ACTION_LAST_POSITION 4
+
+#define END_TURN_LAST_POSITION 0
 
 #define X1_OFFSET 0
 #define Y1_OFFSET 1
 #define X2_OFFSET 2
 #define Y2_OFFSET 3
 
-static void fill_x_y(int begin, char *line, struct command *ret);
-static int get_number(int n, char *line);
-static void get_token(int n, char *line, char *buf);
+static int process_line(const char *line, struct command *cmd);
 
-int parse_command(struct command *ret) {
+// Declaration of functions for filling command struct.
+static int fill_init_struct(const char *line, struct command *cmd);
+static int fill_move_action_struct(const char *line, struct command *cmd, enum command_type type);
+static int fill_end_turn_struct(const char *line, struct command *cmd);
+static int fill_x_y(int begin, const char *line, struct command *cmd);
+
+// Declaration of functions for manging tokens.
+static void get_token(int n, const char *line, char *buf);
+static bool is_token_empty(int n, const char *line);
+static int get_number(int n, const char *line, int *error);
+static bool is_number(const char *str);
+
+
+// Implementation of exported function
+
+int parse_command(struct command *cmd) {
 	char *line;
-	char *command_str;
+	int ret;
 	
 	line = malloc(LINE_MAX * sizeof(char));
-	command_str = malloc(LINE_MAX * sizeof(char));
 
 	fgets(line, LINE_MAX, stdin);
+
 	if(feof(stdin)) {
-		free(command_str);
 		free(line);
 		return PARSE_END;
 	}
 
+	ret = process_line(line, cmd);
+
+	free(line);
+
+	return ret;
+}
+
+static int process_line(const char *line, struct command *cmd) {
+	int ret;
+	char *command_str;
+
+	ret = PARSE_OK;
+	command_str = malloc(LINE_MAX * sizeof(char));
+
 	get_token(COMMAND_POSITION, line, command_str);
 
-	if(strcmp(command_str, INIT_CMD) == 0) {
-		ret->type = INIT;
-		ret->n = get_number(N_POSITION, line);
-		ret->k = get_number(K_POSITION, line);
-		ret->p = get_number(P_POSITION, line);
-		fill_x_y(INIT_X_Y_POSITION, line, ret);
-	} else if(strcmp(command_str, MOVE_CMD) == 0) {
-		ret->type = MOVE;
-		fill_x_y(MOVE_X_Y_POSITION, line, ret);
-	} else if(strcmp(command_str, PRODUCE_KNIGHT_CMD) == 0) {
-		ret->type = PRODUCE_KNIGHT;
-		fill_x_y(PRODUCE_KNIGHT_X_Y_POSITION, line, ret);
-	} else if(strcmp(command_str, PRODUCE_PEASANT_CMD) == 0) {
-		ret->type = PRODUCE_PEASANT;
-		fill_x_y(PRODUCE_PEASANT_X_Y_POSITION, line, ret);
-	} else if(strcmp(command_str, END_TURN_CMD) == 0) {
-		ret->type = END_TURN;
-	} else {
-		free(command_str);
-		free(line);
-		return PARSE_ERROR;
-	}
+	if(strcmp(command_str, INIT_CMD) == 0)
+		ret = fill_init_struct(line, cmd);
+	else if(strcmp(command_str, MOVE_CMD) == 0)
+		ret = fill_move_action_struct(line, cmd, MOVE);
+	else if(strcmp(command_str, PRODUCE_KNIGHT_CMD) == 0)
+		ret = fill_move_action_struct(line, cmd, PRODUCE_KNIGHT);
+	else if(strcmp(command_str, PRODUCE_PEASANT_CMD) == 0)
+		ret = fill_move_action_struct(line, cmd, PRODUCE_PEASANT);
+	else if(strcmp(command_str, END_TURN_CMD) == 0)
+		ret = fill_end_turn_struct(line, cmd);
+	else
+		ret = PARSE_ERROR;
 
 	free(command_str);
-	free(line);
+
+	return ret;
+}
+
+// Implementation of functions for filling command struct
+
+static int fill_init_struct(const char *line, struct command *cmd) {
+	int ret;
+	int player_int;
+
+	ret = PARSE_OK;
+
+	if(!is_token_empty(INIT_LAST_POSITION + 1, line))
+		return PARSE_ERROR;
+
+	cmd->type = INIT;
+	cmd->size = get_number(INIT_SIZE_POSITION, line, &ret);
+	cmd->turns = get_number(INIT_TURNS_POSITION, line, &ret);
+
+	player_int = get_number(INIT_PLAYER_POSITION, line, &ret);
+	if(ret != PARSE_OK)
+		return ret;
+
+	switch(player_int) {
+		case PLAYER_1_INT:
+			cmd->player = PLAYER_1;
+			break;
+		case PLAYER_2_INT:
+			cmd->player = PLAYER_2;
+			break;
+		default:
+			return PARSE_ERROR;
+	}
+
+	ret =  fill_x_y(INIT_X_Y_POSITION, line, cmd);
+
+	return ret;
+}
+
+static int fill_move_action_struct(const char *line, struct command *cmd, enum command_type type) {
+	if(!is_token_empty(MOVE_ACTION_LAST_POSITION + 1, line))
+		return PARSE_ERROR;
+
+	cmd->type = type;
+
+	return fill_x_y(MOVE_ACTION_X_Y_POSITION, line, cmd);
+}
+
+static int fill_end_turn_struct(const char *line, struct command *cmd) {
+	if(!is_token_empty(END_TURN_LAST_POSITION + 1, line))
+		return PARSE_ERROR;
+
+	cmd->type = END_TURN;
 
 	return PARSE_OK;
 }
 
-static void fill_x_y(int begin, char *line, struct command *ret) {
-	ret->x1 = get_number(begin + X1_OFFSET, line);
-	ret->y1 = get_number(begin + Y1_OFFSET, line);
-	ret->x2 = get_number(begin + X2_OFFSET, line);
-	ret->y2 = get_number(begin + Y2_OFFSET, line);
+static int fill_x_y(int begin, const char *line, struct command *cmd) {
+	int ret = PARSE_OK;
+
+	cmd->x1 = get_number(begin + X1_OFFSET, line, &ret);
+	cmd->y1 = get_number(begin + Y1_OFFSET, line, &ret);
+	cmd->x2 = get_number(begin + X2_OFFSET, line, &ret);
+	cmd->y2 = get_number(begin + Y2_OFFSET, line, &ret);
+
+	return ret;
 }
 
-static int get_number(int pos, char *line) {
-	char *buf;
-	int res;
-	
-	buf = malloc(LINE_MAX * sizeof(char));
-	
-	get_token(pos, line, buf);
-	res = atoi(buf);
+// Implementation of functions for manging tokens.
 
-	free(buf);
-
-	return res;
-}
-
-static void get_token(int pos, char *line, char *buf) {
-	char *current = line;
+static void get_token(int pos, const char *line, char *buf) {
+	const char *current = line;
 	int token_number = 0;
 	int i = 0;
 
 	while(token_number <= pos) {
 		i = 0;
-		while(*current != ' ' && *current != '\n') {
+		while((*current != ' ' && *current != '\n') && *current != '\0') {
 			buf[i] = *current;
 			current++;
 			i++;
@@ -120,4 +192,48 @@ static void get_token(int pos, char *line, char *buf) {
 	buf[i] = '\0';
 }
 
+static bool is_token_empty(int n, const char *line) {
+	char *buf;
+	bool ret;
 
+	buf = malloc(LINE_MAX * sizeof(char));
+
+	get_token(n, line, buf);
+	ret = strcmp(buf, "") == 0;
+
+	free(buf);
+	
+	return ret;
+}
+
+static int get_number(int pos, const char *line, int *error) {
+	char *buf;
+	int result;
+	
+	buf = malloc(LINE_MAX * sizeof(char));
+	
+	get_token(pos, line, buf);
+	if(is_number(buf))
+		result = atoi(buf);
+	else
+		*error = PARSE_ERROR;
+
+	free(buf);
+
+	return result;
+}
+
+static bool is_number(const char *str) {
+	if(str == NULL)
+		return false;
+	if(*str == '\0')
+		return false;
+
+	while(*str != '\0') {
+		if(!isdigit(*str))
+			return false;
+		str++;
+	}
+
+	return true;
+}
