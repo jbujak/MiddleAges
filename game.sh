@@ -16,6 +16,41 @@ AI_2=""
 
 main() {
 	process_params "$@"
+	prepare_pipes
+
+	cat <&$GUI_INPUT >&$GUI_OUTPUT &
+	pid=$!
+
+	echo $'abc\ndef' >&$GUI_INPUT
+	read a <&$GUI_OUTPUT
+	echo $a
+	read a <&$GUI_OUTPUT
+	echo $a
+
+	kill $pid
+	wait -n $pid 2>/dev/null
+}
+
+prepare_pipes() {
+	# Create gui input pipe
+	PIPE=$(mktemp -u)
+	mkfifo $PIPE
+	# attach it to file descriptor 3
+	exec 3<>$PIPE
+	readonly GUI_INPUT=3
+
+	# unlink (delete) the named pipe
+	rm $PIPE
+
+	# Create gui output pipe
+	PIPE=$(mktemp -u)
+	mkfifo $PIPE
+	# attach it to file descriptor 4
+	exec 4<>$PIPE
+	readonly GUI_OUTPUT=4
+
+	# unlink (delete) the named pipe
+	rm $PIPE
 }
 
 process_params() {
@@ -118,24 +153,6 @@ abs() {
 		echo "$1"
 	else
 		echo "$((-$1))"
-	fi
-}
-
-max() {
-	if [ "$1" -ge 0 ]
-	then
-		echo "$1"
-	else
-		echo "$2"
-	fi
-}
-
-min() {
-	if [ "$1" -le 0 ]
-	then
-		echo "$1"
-	else
-		echo "$2"
 	fi
 }
 
