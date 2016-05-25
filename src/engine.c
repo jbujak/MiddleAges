@@ -29,11 +29,12 @@ static enum player winner;
 static int init_counter;
 static enum player first_init_player;
 
+static enum player ai_player;
+
 static struct list *list;
 
 // Declaration of functions used during initialization.
 static void add_start_pawns_to_list(int x, int y, enum player player);
-static int check_second_init(int size, int turns, enum player player, int x1, int y1, int x2, int y2);
 
 // Declaration of functions used during move and action.
 static int produce_pawn(int x1, int y1, int x2, int y2, enum pawn_type pawn_type);
@@ -62,7 +63,7 @@ void start_game() {
 }
 
 int end_game() {
-	if(init_counter != 2)
+	if(init_counter != 1)
 		return MOVE_INVALID;
 
 	free_list(list);
@@ -77,8 +78,6 @@ void print_topleft() {
 }
 
 int init(int size, int turns, enum player player, int x1, int y1, int x2, int y2) { 
-	int ret;
-
 	init_counter++;
 
 	if(init_counter == 1) {
@@ -91,15 +90,10 @@ int init(int size, int turns, enum player player, int x1, int y1, int x2, int y2
 		add_start_pawns_to_list(x1, y1, PLAYER_1);
 		add_start_pawns_to_list(x2, y2, PLAYER_2);
 		first_init_player = player;
+		ai_player = player;
 
-	} else if(init_counter == 2) {
-		// Second call of init.
-
-		ret = check_second_init(size, turns, player, x1, y1, x2, y2);
-		if(ret != MOVE_OK)
-			return ret;
 	} else {
-		// More than two inits - error.
+		// More than one init - error.
 
 		return MOVE_INVALID;
 	}
@@ -108,7 +102,7 @@ int init(int size, int turns, enum player player, int x1, int y1, int x2, int y2
 }
 
 int move(int x1, int y1, int x2, int y2) {
-	if(init_counter != 2)
+	if(init_counter != 1)
 		return MOVE_INVALID;
 
 	struct pawn *source_pawn;
@@ -138,21 +132,21 @@ int move(int x1, int y1, int x2, int y2) {
 }
 
 int produce_knight(int x1, int y1, int x2, int y2) {
-	if(init_counter != 2)
+	if(init_counter != 1)
 		return MOVE_INVALID;
 
 	return produce_pawn(x1, y1, x2, y2, KNIGHT);
 }
 
 int produce_peasant(int x1, int y1, int x2, int y2) {
-	if(init_counter != 2)
+	if(init_counter != 1)
 		return MOVE_INVALID;
 
 	return produce_pawn(x1, y1, x2, y2, PEASANT);
 }
 
 int end_turn() {
-	if(init_counter != 2)
+	if(init_counter != 1)
 		return MOVE_INVALID;
 
 	current_player = next_player();
@@ -169,10 +163,23 @@ enum player get_winner() {
 	return winner;
 }
 
+enum player get_current_player() {
+	return current_player;
+}
+
 enum state get_current_state() {
 	return current_state;
 }
 
+enum player get_ai_player() {
+	return ai_player;
+}
+
+void make_ai_move() {
+	printf("END_TURN\n");
+	fflush(stdout);
+	end_turn();
+}
 
 // Implementation of functions used during initialization.
 
@@ -199,39 +206,6 @@ static void add_start_pawns_to_list(int x, int y, enum player player) {
 	}
 }
 
-static int check_second_init(int size, int turns, enum player player, int x1, int y1, int x2, int y2) {
-	struct pawn *player_1_pawn;
-	struct pawn *player_2_pawn;
-
-	player_1_pawn = get_pawn(x1, y1, list);
-	player_2_pawn = get_pawn(x2, y2, list);
-
-	if(size != board_size) {
-		return MOVE_INVALID;
-	}
-
-	if(turns != number_of_turns) {
-		return MOVE_INVALID;
-	}
-
-	if(player == first_init_player) {
-		return MOVE_INVALID;
-	}
-
-	if(player_1_pawn == NULL || player_2_pawn == NULL) {
-		return MOVE_INVALID;
-	}
-
-	if(player_1_pawn->type != KING || player_2_pawn->type != KING) {
-		return MOVE_INVALID;
-	}
-
-	if(player_1_pawn->player != PLAYER_1 || player_2_pawn->player != PLAYER_2) {
-		return MOVE_INVALID;
-	}
-	
-	return MOVE_OK;
-}
 
 // Implementation of functions used during move and action.
 

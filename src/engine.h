@@ -92,4 +92,19 @@ enum state get_current_state();
  */
 enum player get_winner();
 
+/**
+ * Returns current player.
+ */
+enum player get_current_player();
+
+/**
+ * Return player owned by AI.
+ */
+enum player get_ai_player();
+
+/**
+ * Makes move and prints it on stdout.
+ */
+void make_ai_move();
+
 #endif /* ENGINE_H */

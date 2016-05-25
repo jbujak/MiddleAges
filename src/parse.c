@@ -9,14 +9,9 @@
 #include <ctype.h>
 
 #include "parse.h"
+#include "commands.h"
 
 #define LINE_MAX 100
-
-#define INIT_CMD "INIT"
-#define MOVE_CMD "MOVE"
-#define PRODUCE_KNIGHT_CMD "PRODUCE_KNIGHT"
-#define PRODUCE_PEASANT_CMD "PRODUCE_PEASANT"
-#define END_TURN_CMD "END_TURN"
 
 #define PLAYER_1_INT 1
 #define PLAYER_2_INT 2

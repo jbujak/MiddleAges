@@ -5,11 +5,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "parse.h"
 #include "engine.h"
 
+#define WIN_CODE 0
+#define DRAW_CODE 1
+#define LOSE_CODE 2
 #define INPUT_ERROR_CODE 42
+
 #define OK 0
 
 #define INPUT_ERROR_MSG "input error\n"
@@ -18,8 +23,6 @@
 
 static int main_loop();
 static int execute_command(struct command *cmd);
-static void print_result();
-static char* player_to_string(enum player player);
 
 /**
  * Processes input until reaches the end of file or game ends.
@@ -27,46 +30,55 @@ static char* player_to_string(enum player player);
  */
 int main() {
 	int ret;
+	enum player winner;
 
 	start_game();
 	ret = main_loop();
 	end_game();
 
 	if(ret != OK) {
-		fprintf(stderr, INPUT_ERROR_MSG);
 		return 	INPUT_ERROR_CODE;
 	}
-	
-	print_result();
 
-	return OK;
+	if(get_current_state() == FINISHED_WON) {
+		winner = get_winner();
+		if(winner == get_ai_player())
+			return WIN_CODE;
+		else
+			return LOSE_CODE;
+	} else {
+		return DRAW_CODE;
+	}
 }
 
 static int main_loop() {
 	int ret;
 	struct command *cmd;
+	bool initialized;
 
 	cmd = malloc(sizeof(struct command));
+	initialized = false;
 
 	while (get_current_state() == IN_PROGRESS) {
-		ret = parse_command(cmd);
-		if(ret == PARSE_END) {
-			break;
-		} else if(ret == PARSE_ERROR) {
-			free(cmd);
-			return INPUT_ERROR_CODE;
-		}
-
-		ret = execute_command(cmd);
-
-		if(ret != MOVE_OK) {
-			free(cmd);
-			return INPUT_ERROR_CODE;
-		}
-
-		if(cmd->type != END_TURN) {
-			print_topleft();
+		if(get_current_player() == get_ai_player() && initialized) {
+			make_ai_move();
+		} else {
+			initialized = true;
+			ret = parse_command(cmd);
+			if(ret == PARSE_END) {
+				break;
+			} else if(ret == PARSE_ERROR) {
+				free(cmd);
+				return INPUT_ERROR_CODE;
 			}
+
+			ret = execute_command(cmd);
+
+			if(ret != MOVE_OK) {
+				free(cmd);
+				return INPUT_ERROR_CODE;
+			}
+		}
 	}
 
 	free(cmd);
@@ -91,25 +103,4 @@ static int execute_command(struct command *cmd) {
 			return MOVE_INVALID;
 	}
 
-}
-
-static void print_result() {
-	enum player winner;
-	if(get_current_state() == FINISHED_WON) {
-		winner = get_winner();
-		fprintf(stderr, WIN_MSG, player_to_string(winner));
-	} else {
-		fprintf(stderr, DRAW_MSG);
-	}
-}
-
-static char* player_to_string(enum player player) {
-	switch(player) {
-		case PLAYER_1:
-			return "player 1";
-		case PLAYER_2:
-			return "player 2";
-		default:
-			return "";
-	}
 }
