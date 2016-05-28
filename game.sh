@@ -41,6 +41,7 @@ CURRENT_PLAYER=$PLAYER_1
 NEXT_PLAYER=$PLAYER_2
 
 main() {
+
 	process_params "$@"
 	if [ $? -ne 0 ]
 	then
@@ -49,7 +50,7 @@ main() {
 
 	prepare_pipes
 
-	./$GUI_EXE $GUI_FLAGS <&$GUI_INPUT >&$GUI_OUTPUT &
+	./$GUI_EXE $GUI_FLAGS <&$GUI_INPUT >&$GUI_OUTPUT 2>/dev/null&
 	local gui_pid=$!
 
 	local ai1_pid=""
@@ -85,6 +86,7 @@ main() {
 
 			if [ $result != $WIN ] && [ $result != $DRAW ] && [ $result != $LOSE ]
 			then
+				kill $ai1_pid $ai2_pid $game_pid >/dev/null 2>&1
 				exit $ERROR
 			fi
 		fi
@@ -97,6 +99,7 @@ main() {
 
 			if [ $result != $WIN ] && [ $result != $DRAW ] && [ $result != $LOSE ]
 			then
+				kill $ai1_pid $ai2_pid $game_pid >/dev/null 2>&1
 				exit $ERROR
 			fi
 		fi
@@ -107,22 +110,33 @@ main() {
 			wait $gui_pid
 			result=$?
 
-			kill $ai1_pid $ai2_pid $game_pid >/dev/null 2>&1
+			if [ $result -ne 0 ]
+			then
+				kill $ai1_pid $ai2_pid $game_pid >/dev/null 2>&1
+				exit $ERROR
+			fi
+			
+			sleep $DELAY
+			kill $game_pid >/dev/null 2>&1
 
 			if [ "$result" != "$OK" ]
 			then
-				kill $ai_1 $ai_2 >/dev/null 2>&1
 				exit $ERROR
 			fi
 			exit $OK
 		fi
-		sleep 0.1
+		sleep 0.01
 	done
 
 	exit $OK
 }
 
 process_params() {
+	if [ $(($# % 2)) -ne 0 ]
+	then
+		exit $ERROR
+	fi
+
 	for (( i=1; i<="$#"; i+=2 ))
 	do
 		local current_param="${@:$i:1}"
@@ -132,51 +146,49 @@ process_params() {
 		if [ "$current_param" = "-n" ]
 		then
 			SIZE=$next_param
-		fi
-
-		if [ "$current_param" = "-k" ]
+		elif [ "$current_param" = "-k" ]
 		then
 			TURNS=$next_param
-		fi
-
-		if [ "$current_param" = "-s" ]
+		elif [ "$current_param" = "-s" ]
 		then
 			DELAY=$next_param
-		fi
-
-		if [ "$current_param" = "-p1" ]
+		elif [ "$current_param" = "-p1" ]
 		then
 			X_1=`echo $next_param | cut -d , -f 1`
 			Y_1=`echo $next_param | cut -d , -f 2`
-		fi
-
-		if [ "$current_param" = "-p2" ]
+		elif [ "$current_param" = "-p2" ]
 		then
 			X_2=`echo $next_param | cut -d , -f 1`
 			Y_2=`echo $next_param | cut -d , -f 2`
-		fi
-
-		if [ "$current_param" = "-ai1" ]
+		elif [ "$current_param" = "-ai1" ]
 		then
 			AI_1="$next_param"
 			PLAYER[$PLAYER_1]=$AI
-		fi
-
-		if [ "$current_param" = "-ai2" ]
+		elif [ "$current_param" = "-ai2" ]
 		then
 			AI_2="$next_param"
 			PLAYER[$PLAYER_2]=$AI
+		else
+			exit $ERROR
 		fi
 	done
 
 	if [ "$X_1" = "0" ]
 	then
 		generate_position X_1 Y_1 $X_2 $Y_2
+		if [ $? -ne 0 ]
+		then
+			exit $ERROR
+		fi
 	fi
 
 	if [ "$X_2" = "0" ]
 	then
 		generate_position X_2 Y_2 $X_1 $Y_1
+		if [ $? -ne 0 ]
+		then
+			exit $ERROR
+		fi
 	fi
 
 	if [ "$AI_1" = "" ]
@@ -191,6 +203,23 @@ process_params() {
 		PLAYER[$PLAYER_2]=$HUMAN
 	fi
 
+	check_params
+	if [ $? -ne 0 ]
+	then
+		exit $ERROR
+	fi
+}
+
+check_params() {
+	if [ $SIZE -le 8 ] || [ $SIZE -ge $((1 << 31)) ]
+	then
+		exit $ERROR
+	fi
+
+	if [ $TURNS -lt 1 ] || [ $TURNS -ge $((1 << 31)) ]
+	then
+		exit $ERROR
+	fi
 }
 
 generate_position() {
@@ -298,7 +327,7 @@ prepare_pipes() {
 		eval "exec ${PLAYER_IN[$PLAYER_1]}>/dev/null"
 	fi
 
-	# Create AI_2 input and output pipes
+	# Create and redirect AI_2 input and output pipes
 	local pipe=$(mktemp -u)
 	mkfifo $pipe
 	eval "exec ${PLAYER_IN[$PLAYER_2]}<>$pipe"
@@ -331,7 +360,6 @@ game() {
 			read current_command <&${PLAYER_OUT[$CURRENT_PLAYER]}
 
 			echo "$current_command" >&${PLAYER_IN[$NEXT_PLAYER]}
-			echo "$current_command"
 			if [ "${PLAYER[$CURRENT_PLAYER]}" = "$AI" ]
 			then
 				echo "$current_command" >&$GUI_INPUT
