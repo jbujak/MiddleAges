@@ -9,9 +9,14 @@
 #include <ctype.h>
 
 #include "parse.h"
-#include "commands.h"
 
 #define LINE_MAX 100
+
+#define INIT_CMD "INIT"
+#define MOVE_CMD "MOVE"
+#define PRODUCE_KNIGHT_CMD "PRODUCE_KNIGHT"
+#define PRODUCE_PEASANT_CMD "PRODUCE_PEASANT"
+#define END_TURN_CMD "END_TURN"
 
 #define PLAYER_1_INT 1
 #define PLAYER_2_INT 2
@@ -44,7 +49,7 @@ static int fill_x_y(int begin, const char *line, struct command *cmd);
 
 // Declaration of functions for manging tokens.
 static void get_token(int n, const char *line, char *buf);
-static bool is_token_empty(int n, const char *line);
+static int number_of_tokens(const char *line);
 static int get_number(int n, const char *line, int *error);
 static bool is_number(const char *str);
 
@@ -106,7 +111,7 @@ static int fill_init_struct(const char *line, struct command *cmd) {
 
 	ret = PARSE_OK;
 
-	if(!is_token_empty(INIT_LAST_POSITION + 1, line))
+	if(number_of_tokens(line) != INIT_LAST_POSITION)
 		return PARSE_ERROR;
 
 	cmd->type = INIT;
@@ -134,7 +139,7 @@ static int fill_init_struct(const char *line, struct command *cmd) {
 }
 
 static int fill_move_action_struct(const char *line, struct command *cmd, enum command_type type) {
-	if(!is_token_empty(MOVE_ACTION_LAST_POSITION + 1, line))
+	if(number_of_tokens(line) != MOVE_ACTION_LAST_POSITION)
 		return PARSE_ERROR;
 
 	cmd->type = type;
@@ -143,7 +148,7 @@ static int fill_move_action_struct(const char *line, struct command *cmd, enum c
 }
 
 static int fill_end_turn_struct(const char *line, struct command *cmd) {
-	if(!is_token_empty(END_TURN_LAST_POSITION + 1, line))
+	if(number_of_tokens(line) != END_TURN_LAST_POSITION)
 		return PARSE_ERROR;
 
 	cmd->type = END_TURN;
@@ -187,18 +192,19 @@ static void get_token(int pos, const char *line, char *buf) {
 	buf[i] = '\0';
 }
 
-static bool is_token_empty(int n, const char *line) {
-	char *buf;
-	bool ret;
+static int number_of_tokens(const char *line) {
+	int res;
+	const char *current;
 
-	buf = malloc(LINE_MAX * sizeof(char));
+	res = 0;
+	current = line;
+	while(*current != '\n' && *current != '\0') {
+		current++;
+		if(*current == ' ')
+			res++;
+	}
 
-	get_token(n, line, buf);
-	ret = strcmp(buf, "") == 0;
-
-	free(buf);
-	
-	return ret;
+	return res;
 }
 
 static int get_number(int pos, const char *line, int *error) {
