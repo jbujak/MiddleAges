@@ -45,7 +45,6 @@ main() {
 	process_params "$@"
 	if [ $? -ne 0 ]
 	then
-		echo "A"
 		exit $ERROR
 	fi
 
@@ -88,7 +87,6 @@ main() {
 			if [ $result != $WIN ] && [ $result != $DRAW ] && [ $result != $LOSE ]
 			then
 				kill $ai1_pid $ai2_pid $game_pid >/dev/null 2>&1
-		echo "b"
 				exit $ERROR
 			fi
 		fi
@@ -102,7 +100,6 @@ main() {
 			if [ $result != $WIN ] && [ $result != $DRAW ] && [ $result != $LOSE ]
 			then
 				kill $ai1_pid $ai2_pid $game_pid >/dev/null 2>&1
-		echo "c"
 				exit $ERROR
 			fi
 		fi
@@ -127,11 +124,10 @@ main() {
 			if [ $gui_result -ne 0 ]
 			then
 				kill $ai1_pid $ai2_pid $game_pid >/dev/null 2>&1
-		echo "e"
 				exit $ERROR
 			fi
 
-			sleep 1
+			sleep 2
 		fi
 
 		sleep 0.01
