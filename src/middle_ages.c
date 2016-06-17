@@ -7,7 +7,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "utils.h"
 #include "parse.h"
+#include "command.h"
 #include "engine.h"
 
 #define WIN_CODE 0
@@ -22,7 +24,6 @@
 #define WIN_MSG "%s won\n"
 
 static int main_loop();
-static int execute_command(struct command *cmd);
 
 /**
  * Processes input until reaches the end of file or game ends.
@@ -86,21 +87,3 @@ static int main_loop() {
 	return OK;
 }
 
-static int execute_command(struct command *cmd) {
-	switch (cmd->type) {
-		case INIT:
-			return init(cmd->size, cmd->turns, cmd->player,
-				cmd->x1, cmd->y1, cmd->x2, cmd->y2);
-		case MOVE:
-			return move(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
-		case PRODUCE_KNIGHT:
-			return produce_knight(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
-		case PRODUCE_PEASANT:
-			return produce_peasant(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
-		case END_TURN:
-			return end_turn();
-		default:
-			return MOVE_INVALID;
-	}
-
-}

@@ -9,6 +9,8 @@
 #include <ctype.h>
 
 #include "parse.h"
+#include "command.h"
+#include "utils.h"
 
 #define LINE_MAX 100
 
@@ -139,6 +141,9 @@ static int fill_init_struct(const char *line, struct command *cmd) {
 }
 
 static int fill_move_action_struct(const char *line, struct command *cmd, enum command_type type) {
+	if(line == NULL || cmd == NULL)
+		return PARSE_ERROR;
+
 	if(number_of_tokens(line) != MOVE_ACTION_LAST_POSITION)
 		return PARSE_ERROR;
 
@@ -148,6 +153,9 @@ static int fill_move_action_struct(const char *line, struct command *cmd, enum c
 }
 
 static int fill_end_turn_struct(const char *line, struct command *cmd) {
+	if(line == NULL || cmd == NULL)
+		return PARSE_ERROR;
+
 	if(number_of_tokens(line) != END_TURN_LAST_POSITION)
 		return PARSE_ERROR;
 
@@ -158,6 +166,9 @@ static int fill_end_turn_struct(const char *line, struct command *cmd) {
 
 static int fill_x_y(int begin, const char *line, struct command *cmd) {
 	int ret = PARSE_OK;
+
+	if(line == NULL || cmd == NULL)
+		return PARSE_ERROR;
 
 	cmd->x1 = get_number(begin + X1_OFFSET, line, &ret);
 	cmd->y1 = get_number(begin + Y1_OFFSET, line, &ret);
@@ -196,6 +207,9 @@ static int number_of_tokens(const char *line) {
 	int res;
 	const char *current;
 
+	if(line == NULL)
+		return 0;
+
 	res = 0;
 	current = line;
 	while(*current != '\n' && *current != '\0') {
@@ -212,6 +226,7 @@ static int get_number(int pos, const char *line, int *error) {
 	int result;
 	
 	buf = malloc(LINE_MAX * sizeof(char));
+	result = -1;
 	
 	get_token(pos, line, buf);
 	if(is_number(buf))

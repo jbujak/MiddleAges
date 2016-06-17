@@ -8,6 +8,9 @@
 #define MOVE_OK 0
 #define MOVE_INVALID 1
 
+#include "command.h"
+#include "pawn.h"
+
 /**
  * Possible states of a game
  */
@@ -106,5 +109,11 @@ enum player get_ai_player();
  * Makes move and prints it on stdout.
  */
 void make_ai_move();
+
+/**
+ * Executes command given in argument.
+ * @return MOVE_OK if move was correct or MOVE_INVALID if not.
+ */
+int execute_command(struct command *cmd);
 
 #endif /* ENGINE_H */

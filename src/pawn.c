@@ -3,8 +3,10 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "pawn.h"
+#include "utils.h"
 
 struct pawn* create_pawn(int x, int y, enum pawn_type type, enum player player, int current_turn) {
 	struct pawn *result;

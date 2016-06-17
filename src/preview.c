@@ -7,6 +7,7 @@
 #include "preview.h"
 #include "pawn.h"
 #include "global.h"
+#include "utils.h"
 
 #define MAX_PREVIEW_SIZE 10
 #define PREVIEW_EMPTY '.'
@@ -76,6 +77,9 @@ static char get_preview_symbol(enum player player, enum pawn_type pawn_type) {
 			break;
 		case KING: 
 			result = PREVIEW_KING;
+			break;
+		default:
+			result = PREVIEW_EMPTY;
 	}
 
 	return player == PLAYER_1 ? upcase(result) : downcase(result);

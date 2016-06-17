@@ -50,7 +50,7 @@ main() {
 
 	prepare_pipes
 
-	./$GUI_EXE $GUI_FLAGS <&$GUI_INPUT >&$GUI_OUTPUT 2>/dev/null&
+	./$GUI_EXE $GUI_FLAGS <&$GUI_INPUT >&$GUI_OUTPUT &
 	local gui_pid=$!
 
 	local ai1_pid=""
@@ -365,6 +365,7 @@ game() {
 			read current_command <&${PLAYER_OUT[$CURRENT_PLAYER]}
 
 			echo "$current_command" >&${PLAYER_IN[$NEXT_PLAYER]}
+			echo "$current_command" >&2
 			if [ "${PLAYER[$CURRENT_PLAYER]}" = "$AI" ]
 			then
 				echo "$current_command" >&$GUI_INPUT

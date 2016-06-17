@@ -10,25 +10,7 @@
 #define PARSE_ERROR 2
 
 #include "global.h"
-
-/**
- * Recognized commands.
- */
-enum command_type {
-	INIT, MOVE, PRODUCE_KNIGHT, PRODUCE_PEASANT, END_TURN
-};
-
-/*
- * Structure used to represent single command.
- */
-struct command {
-	enum command_type type;
-	int size;
-	int turns;
-	enum player player;
-	int x1, y1;
-	int x2, y2;
-};
+#include "command.h"
 
 /** Reads a command.
  * Fills command structure given in parameter with next command data.

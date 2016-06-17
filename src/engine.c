@@ -6,15 +6,20 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdbool.h>
+#include <string.h>
 
+#include "ai.h"
 #include "list.h"
 #include "pawn.h"
 #include "engine.h"
 #include "preview.h"
 #include "global.h"
+#include "utils.h"
 
 #define PAWN_RANGE 1
 #define DELAY_BEFORE_ACTION 2
+
+#define LINE_MAX 100
 
 static const enum player START_PLAYER = PLAYER_1;
 
@@ -66,6 +71,7 @@ int end_game() {
 	if(init_counter != 1)
 		return MOVE_INVALID;
 
+	clean_ai();
 	free_list(list);
 	if(current_state != FINISHED_WON)
 		current_state = FINISHED_DRAW;
@@ -92,6 +98,11 @@ int init(int size, int turns, enum player player, int x1, int y1, int x2, int y2
 		first_init_player = player;
 		ai_player = player;
 
+		if(ai_player == PLAYER_1)
+			init_ai(x1, y1, x2, y2, list);
+		else
+			init_ai(x2, y2, x1, y1, list);
+
 	} else {
 		// More than one init - error.
 
@@ -108,6 +119,7 @@ int move(int x1, int y1, int x2, int y2) {
 	struct pawn *source_pawn;
 	struct pawn *destination_pawn;
 	struct pawn *alive_pawn;
+
 
 	if(!is_move_valid(x1, y1, x2, y2))
 		return MOVE_INVALID;
@@ -176,9 +188,48 @@ enum player get_ai_player() {
 }
 
 void make_ai_move() {
-	printf("END_TURN\n");
-	fflush(stdout);
-	end_turn();
+	struct command *command;
+	char *move;
+	
+	command = malloc(sizeof(struct command));
+	move = malloc(LINE_MAX * sizeof(char));
+
+	do {
+		get_ai_move(command);
+		if(command->type == NONE)
+			continue;
+
+		command_to_string(command, move);
+
+		printf("%s\n", move);
+		fflush(stdout);
+		execute_command(command);
+	} while(command->type != END_TURN && current_state == IN_PROGRESS);
+
+
+	free(command);
+	free(move);
+}
+
+int execute_command(struct command *cmd) {
+	switch (cmd->type) {
+		case INIT:
+			return init(cmd->size, cmd->turns, cmd->player,
+				cmd->x1, cmd->y1, cmd->x2, cmd->y2);
+		case MOVE:
+			return move(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
+		case PRODUCE_KNIGHT:
+			return produce_knight(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
+		case PRODUCE_PEASANT:
+			return produce_peasant(cmd->x1, cmd->y1, cmd->x2, cmd->y2);
+		case END_TURN:
+			return end_turn();
+		case NONE:
+			return MOVE_OK;
+		default:
+			return MOVE_INVALID;
+	}
+
 }
 
 // Implementation of functions used during initialization.
@@ -221,6 +272,8 @@ static int produce_pawn(int x1, int y1, int x2, int y2, enum pawn_type pawn_type
 
 	new_pawn = create_pawn(x2, y2, pawn_type, current_player, current_turn);
 	add_pawn(new_pawn, list);
+	if(new_pawn->player == get_ai_player())
+		add_ai_pawn(new_pawn);
 
 	update_preview_add(current_player, x2, y2, pawn_type);
 
@@ -299,6 +352,9 @@ static void fight(struct pawn *pawn_1, struct pawn *pawn_2, struct pawn **alive_
 			winner = pawn_1->player;
 		}
 			
+		if(pawn_2->player == get_ai_player())
+			remove_ai_pawn(pawn_2);
+
 		free(pawn_2);
 
 		*alive_pawn = pawn_1;
@@ -308,12 +364,20 @@ static void fight(struct pawn *pawn_1, struct pawn *pawn_2, struct pawn **alive_
 			winner = pawn_2->player;
 		}
 
+		if(pawn_1->player == get_ai_player())
+			remove_ai_pawn(pawn_1);
+
 		free(pawn_1);
 
 		*alive_pawn = pawn_2;
 	} else { 
 		if(pawn_1->type == KING)
 			current_state = FINISHED_DRAW;
+
+		if(pawn_1->player == get_ai_player())
+			remove_ai_pawn(pawn_1);
+		if(pawn_2->player == get_ai_player())
+			remove_ai_pawn(pawn_2);
 
 		free(pawn_1);
 		free(pawn_2);

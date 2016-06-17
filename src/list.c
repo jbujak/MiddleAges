@@ -6,10 +6,12 @@
 
 #include "list.h"
 #include "pawn.h"
+#include "utils.h"
 
 struct list {
 	struct list_element *head;
 	struct list_element *tail;
+	struct list_element *current;
 };
 
 struct list_element {
@@ -40,6 +42,8 @@ struct list* create_list() {
 	tail->next = head;
 	tail->prev = NULL;
 	new_list->tail = tail;
+
+	new_list->current = NULL;
 
 	return new_list;
 }
@@ -104,9 +108,40 @@ void free_list(struct list *list) {
 		current = next;
 	}
 
+	free(list->tail);
+	free(list->head);
+	free(list);
+}
+
+void free_list_wihout_content(struct list *list) {
+	struct list_element *current;
+	struct list_element *next;
+
+	current = list->tail->next;
+
+	while(current->next != NULL) {
+		next = current->next;
+
+		free(current);
+
+		current = next;
+	}
+
 	free(list->head);
 	free(list->tail);
 	free(list);
+}
+
+struct pawn* get_first_pawn(struct list *list) {
+	list->current = list->tail->next;
+	return list->current->value;
+}
+
+struct pawn* get_next_pawn(struct list *list) {
+	if(list->current->next == NULL)
+		return NULL;
+	list->current = list->current->next;
+	return list->current->value;
 }
 
 static struct list_element* find_element(int x, int y, const struct list* list) {

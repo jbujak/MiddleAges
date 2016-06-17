@@ -19,7 +19,7 @@
  * Possible player values.
  */
 enum player {
-	PLAYER_1, PLAYER_2, NONE_PLAYER
+	NONE_PLAYER, PLAYER_1, PLAYER_2
 };
 
 #endif //GLOBAL_H
