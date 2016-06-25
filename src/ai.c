@@ -227,7 +227,6 @@ static void move_knight(struct command *command) {
 			if(x2[i] < 1 || x2[j] > get_board_size()) continue;
 			if(y2[j] < 1 || y2[j] > get_board_size()) continue;
 
-			fprintf(stderr, "post (%d, %d)\n", x2[i], y2[j]);
 			dest_pawn = get_pawn(x2[i], y2[j], pawns);
 			if(dest_pawn == NULL || dest_pawn->player != get_ai_player()) {
 				command->x2 = x2[i];
