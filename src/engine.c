@@ -232,6 +232,10 @@ int execute_command(struct command *cmd) {
 
 }
 
+int get_board_size() {
+	return board_size;
+}
+
 // Implementation of functions used during initialization.
 
 static void add_start_pawns_to_list(int x, int y, enum player player) {

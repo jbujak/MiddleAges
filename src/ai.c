@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "ai.h"
 #include "list.h"
@@ -116,14 +117,19 @@ static void place_peasant(struct command *command) {
 	int y2;
 
 	if(enemy_king->x > peasant_1->x)
-		x2 = peasant_1->x + 1;
-	else
 		x2 = peasant_1->x - 1;
+	else
+		x2 = peasant_1->x + 1;
 
 	if(enemy_king->y > peasant_1->y)
 		y2 = peasant_1->y + 1;
 	else
 		y2 = peasant_1->y - 1;
+	
+	if(y2 > get_board_size())
+		y2 -= 2;
+	else if(y2 < 1)
+		y2 += 2;
 
 	command->type = PRODUCE_PEASANT;
 
@@ -153,6 +159,11 @@ static void place_knight(struct pawn *peasant, struct command *command) {
 	else
 		command->y2--;
 
+	if(command->y2 > get_board_size())
+		command->y2 -= 2;
+	else if(command->y2 < 1)
+		command->y2 += 2;
+
 	if(get_pawn(command->x2, command->y2, pawns) != NULL) {
 		command->type = NONE;
 	}
@@ -161,58 +172,75 @@ static void place_knight(struct pawn *peasant, struct command *command) {
 		can_produce_knight_1 = false;
 	else
 		can_produce_knight_2 = false;
+	
+	current_knight = get_first_pawn(knights);
 }
 
 static void move_knight(struct command *command) {
 	struct pawn *target;
 	struct pawn *dest_pawn;
-	struct pawn *dest_pawn_1;
-	struct pawn *dest_pawn_2;
-	int x2;
-	int y2;
+	int x2[3];
+	int y2[3];
 
 	target = get_nearest_enemy_pawn(current_knight->x, current_knight->y);
 
-	if(target->x > current_knight->x)
-		x2 = current_knight->x + 1;
-	else if(target->x < current_knight->x)
-		x2 = current_knight->x - 1;
-	else
-		x2 = current_knight->x;
-
-	if(target->y > current_knight->y)
-		y2 = current_knight->y + 1;
-	else if(target->y < current_knight->y)
-		y2 = current_knight->y - 1;
-	else
-		y2 = current_knight->y;
-
-	dest_pawn = get_pawn(x2, y2, pawns);
-	if(dest_pawn != NULL && dest_pawn->player == get_ai_player()) {
-		// Cannot make best move
-		dest_pawn_1 = get_pawn(current_knight->x, y2, pawns);
-		dest_pawn_2 = get_pawn(x2, current_knight->y, pawns);
-
-		if(dest_pawn_1 == NULL || dest_pawn_1->player != get_ai_player()) {
-			x2 = current_knight->x;
-		} else if(dest_pawn_2 == NULL || dest_pawn_2->player != get_ai_player()) {
-			y2 = current_knight->y;
-		} else {
-			// Cannot make any move in enemy's direction
-			command->type = NONE;
-			current_knight = get_next_pawn(knights);
-			return;
-		}
+	if(target->x > current_knight->x) {
+		x2[0] = current_knight->x + 1;
+		x2[1] = current_knight->x;
+		x2[2] = current_knight->x;
 	}
+	else if(target->x < current_knight->x) {
+		x2[0] = current_knight->x - 1;
+		x2[1] = current_knight->x;
+		x2[2] = current_knight->x;
+	}
+	else {
+		x2[0] = current_knight->x;
+		x2[1] = current_knight->x - 1;
+		x2[2] = current_knight->x + 1;
+	}
+
+	if(target->y > current_knight->y) {
+		y2[0] = current_knight->y + 1;
+		y2[1] = current_knight->y;
+		y2[2] = current_knight->y;
+	}
+	else if(target->y < current_knight->y) {
+		y2[0] = current_knight->y - 1;
+		y2[1] = current_knight->y;
+		y2[2] = current_knight->y;
+	}
+	else {
+		y2[0] = current_knight->y;
+		y2[1] = current_knight->y - 1;
+		y2[2] = current_knight->y + 1;
+	}
+
 
 	command->type = MOVE;
 
 	command->x1 = current_knight->x;
 	command->y1 = current_knight->y;
 
-	command->x2 = x2;
-	command->y2 = y2;
+	for(int i = 0; i < 3; i++) {
+		for(int j = 0; j < 3; j++) {
+			if(x2[i] < 1 || x2[j] > get_board_size()) continue;
+			if(y2[j] < 1 || y2[j] > get_board_size()) continue;
 
+			fprintf(stderr, "post (%d, %d)\n", x2[i], y2[j]);
+			dest_pawn = get_pawn(x2[i], y2[j], pawns);
+			if(dest_pawn == NULL || dest_pawn->player != get_ai_player()) {
+				command->x2 = x2[i];
+				command->y2 = y2[j];
+
+				current_knight = get_next_pawn(knights);
+
+				return;
+			}
+		}
+	}
+
+	command->type = NONE;
 	current_knight = get_next_pawn(knights);
 }
 

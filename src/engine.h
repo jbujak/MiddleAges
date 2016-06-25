@@ -111,6 +111,11 @@ enum player get_ai_player();
 void make_ai_move();
 
 /**
+ * @return board size
+ */
+int get_board_size();
+
+/**
  * Executes command given in argument.
  * @return MOVE_OK if move was correct or MOVE_INVALID if not.
  */
